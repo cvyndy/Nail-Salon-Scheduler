@@ -100,5 +100,7 @@ Run the app
 ```
 npm run dev
 ```
- 
+ ### Database Schema
+
+![Database Schema](db_schema.png)
  
