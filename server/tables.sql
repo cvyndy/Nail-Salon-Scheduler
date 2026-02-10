@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE TABLE IF NOT EXISTS service (
     service_id SERIAL PRIMARY KEY,
     service_name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS appointment_service (
@@ -36,5 +36,14 @@ CREATE TABLE IF NOT EXISTS appointment_service (
     PRIMARY KEY (appointment_id, service_id),
     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id),
     FOREIGN KEY (service_id) REFERENCES service(service_id)
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    reviews_id SERIAL PRIMARY KEY,
+    customer_id INT NOT NULL,
+    rating INT NOT NULL,
+    time_posted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    comment TEXT,
+    FOREIGN KEY (customer_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
