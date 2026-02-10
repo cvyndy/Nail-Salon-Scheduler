@@ -100,5 +100,24 @@ Run the app
 ```
 npm run dev
 ```
- 
- 
+ ### Issue was caused by renaming the project directory after creating the virtual environment. 
+First verify the venv contents existed by confirming that python3, pip, and activation scripts were present.
+```
+ls venv/bin
+```
+Removed from the broken environment
+```
+deactivate 2>/dev/null
+unset VIRTUAL_ENV
+hash -r
+```
+Reactivated the correct venv and updated the shell so it would use the venv’s Python and pip instead of the system versions
+```
+source ~/projects/NailSalonApp/venv/bin/activate
+export PATH="$VIRTUAL_ENV/bin:$PATH"
+hash -r
+```
+Reinstall the dependencies inside the new venv
+```
+python3 -m pip install -r requirements.txt
+```
