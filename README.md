@@ -121,3 +121,17 @@ Reinstall the dependencies inside the new venv
 ```
 python3 -m pip install -r requirements.txt
 ```
+### Creating Tables in PostgreSQL
+Create the tables and verify they are there
+```
+psql -h localhost -U cindy -d flask_db -f tables.sql
+psql -h localhost -U cindy -d flask_db -c "\dt"
+```
+### Testing with Postman
+Why Postman over Thunder client? Thunder Client clashed with the wsl on vscode.
+First start the Flask server and then test the different tables using the table names such as... 
+```
+http://127.0.0.1:5000/users
+http://127.0.0.1:5000/appointments
+```
+Since the tables currently do not have any data, it will each return [] successfully.
