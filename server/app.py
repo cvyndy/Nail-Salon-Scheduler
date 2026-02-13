@@ -14,14 +14,33 @@ db = SQLAlchemy(app)
 
 class User(db.Model):
     __tablename__ = "users"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "email": self.email}
+        return {
+            "user_id": self.user_id,
+            "email": self.email,
+            "role": self.role,
+            "name": self.name,
+        }
+
+
+class Dependent(db.Model):
+    __tablename__ = "dependents"
+    dependent_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    def to_dict(self):
+        return {
+            "dependent_id": self.dependent_id,
+            "name": self.name,
+            "user_id": self.user_id,
+        }
 
 
 @app.route("/")
