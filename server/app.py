@@ -33,7 +33,7 @@ class Dependent(db.Model):
     __tablename__ = "dependents"
     dependent_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
 
     def to_dict(self):
         return {
@@ -41,6 +41,52 @@ class Dependent(db.Model):
             "name": self.name,
             "user_id": self.user_id,
         }
+
+@app.route("/test-query", methods=["GET"])
+def test_query():
+    try:
+        users = User.query.all()
+        dependents = Dependent.query.all()
+
+        return {
+            "users": [u.to_dict() for u in users],
+            "dependents": [d.to_dict() for d in dependents]
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.route("/test-insert")
+def test_insert():
+    try:
+        # create a user
+        new_user = User(
+            email="testuser@email.com",
+            password="hashedpassword",
+            role="customer",
+            name="Test User"
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        # create a dependent linked to that user
+        new_dependent = Dependent(
+            name="Child One",
+            user_id=new_user.user_id
+        )
+
+        db.session.add(new_dependent)
+        db.session.commit()
+
+        return {
+            "user": new_user.to_dict(),
+            "dependent": new_dependent.to_dict()
+        }
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
 
 
 @app.route("/")
