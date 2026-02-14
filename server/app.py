@@ -57,6 +57,25 @@ def create_user():
     return new_user.to_dict(), 201
 
 
+@app.route("/dependents", methods=["POST"])
+def create_dependent():
+    name = request.form.get("name")
+    user_id = request.form.get("user_id")
+    new_dep = Dependent(
+        name=name,
+        user_id=int(user_id)
+    )
+    db.session.add(new_dep)
+    db.session.commit()
+    return new_dep.to_dict(), 201
+
+    
+@app.route("/users", methods=["GET"])
+def get_users():
+    users = User.query.all()
+    return [user.to_dict() for user in users], 200
+
+
 """
 @app.route("/test-query", methods=["GET"])
 def test_query():
