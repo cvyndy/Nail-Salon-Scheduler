@@ -50,7 +50,7 @@ def create_user():
         email=data["email"],
         password=data["password"],
         name=data["name"],
-        role="customer"
+        role="customer",
     )
     db.session.add(new_user)
     db.session.commit()
@@ -61,15 +61,12 @@ def create_user():
 def create_dependent():
     name = request.form.get("name")
     user_id = request.form.get("user_id")
-    new_dep = Dependent(
-        name=name,
-        user_id=int(user_id)
-    )
+    new_dep = Dependent(name=name, user_id=int(user_id))
     db.session.add(new_dep)
     db.session.commit()
     return new_dep.to_dict(), 201
 
-    
+
 @app.route("/users", methods=["GET"])
 def get_users():
     users = User.query.all()
