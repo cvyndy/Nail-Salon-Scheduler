@@ -17,7 +17,7 @@ class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(50), nullable=False)
+    role = db.Column(db.String(50), nullable=False, default="customer")
     name = db.Column(db.String(100), nullable=False)
 
     def to_dict(self):
@@ -42,6 +42,26 @@ class Dependent(db.Model):
             "user_id": self.user_id,
         }
 
+
+@app.route("/add-user")
+def add_user():
+    try:
+        new_user = User(
+            email="newuser@email.com",
+            password="password123",
+            name="New User3",
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        return new_user.to_dict()
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+
+
+"""
 @app.route("/test-query", methods=["GET"])
 def test_query():
     try:
@@ -55,8 +75,9 @@ def test_query():
 
     except Exception as e:
         return {"error": str(e)}
+"""
 
-
+"""
 @app.route("/test-insert")
 def test_insert():
     try:
@@ -87,6 +108,7 @@ def test_insert():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}
+"""
 
 
 @app.route("/")
