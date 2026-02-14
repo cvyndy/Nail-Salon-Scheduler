@@ -43,22 +43,20 @@ class Dependent(db.Model):
         }
 
 
-@app.route("/add-user")
-def add_user():
-    try:
-        new_user = User(
-            email="newuser@email.com",
-            password="password123",
-            name="New User3",
-        )
+from flask import request
 
-        db.session.add(new_user)
-        db.session.commit()
-
-        return new_user.to_dict()
-    except Exception as e:
-        db.session.rollback()
-        return {"error": str(e)}
+@app.route("/users", methods=["POST"])
+def create_user():
+    data = request.json
+    new_user = User(
+        email=data["email"],
+        password=data["password"],
+        name=data["name"],
+        role="customer"
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    return new_user.to_dict(), 201
 
 
 """
