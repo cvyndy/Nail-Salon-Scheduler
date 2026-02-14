@@ -43,8 +43,6 @@ class Dependent(db.Model):
         }
 
 
-from flask import request
-
 @app.route("/users", methods=["POST"])
 def create_user():
     data = request.json
