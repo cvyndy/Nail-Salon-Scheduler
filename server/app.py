@@ -73,54 +73,15 @@ def get_users():
     return [user.to_dict() for user in users], 200
 
 
-"""
-@app.route("/test-query", methods=["GET"])
-def test_query():
-    try:
-        users = User.query.all()
-        dependents = Dependent.query.all()
+@app.route("/users/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return {"error": "User not found"}, 404
 
-        return {
-            "users": [u.to_dict() for u in users],
-            "dependents": [d.to_dict() for d in dependents]
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
-"""
-
-"""
-@app.route("/test-insert")
-def test_insert():
-    try:
-        # create a user
-        new_user = User(
-            email="testuser@email.com",
-            password="hashedpassword",
-            role="customer",
-            name="Test User"
-        )
-
-        db.session.add(new_user)
-        db.session.commit()
-
-        # create a dependent linked to that user
-        new_dependent = Dependent(
-            name="Child One",
-            user_id=new_user.user_id
-        )
-
-        db.session.add(new_dependent)
-        db.session.commit()
-
-        return {
-            "user": new_user.to_dict(),
-            "dependent": new_dependent.to_dict()
-        }
-    except Exception as e:
-        db.session.rollback()
-        return {"error": str(e)}
-"""
+    db.session.delete(user)
+    db.session.commit()
+    return {"message": "User deleted"}, 200
 
 
 @app.route("/")
