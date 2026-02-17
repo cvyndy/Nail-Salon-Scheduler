@@ -33,7 +33,11 @@ class Dependent(db.Model):
     __tablename__ = "dependents"
     dependent_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False
+    )
 
     def to_dict(self):
         return {
