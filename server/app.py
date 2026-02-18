@@ -76,6 +76,14 @@ def get_users():
     users = User.query.all()
     return [user.to_dict() for user in users], 200
 
+@app.route("/users/<int:user_id>/dependents", methods=["GET"])
+def get_user_dependents(user_id):
+    user = User.query.get(user_id)
+
+    if not user:
+        return {"error": "User not found"}, 404
+    dependents = Dependent.query.filter_by(user_id=user_id).all()
+    return [d.to_dict() for d in dependents], 200
 
 @app.route("/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
