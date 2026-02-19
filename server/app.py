@@ -26,11 +26,13 @@ def db_test():
     except Exception as e:
         return f"<p>Database connection failed: {str(e)}</p>"
 
+
 @app.route("/users", methods=["GET"])
 def get_users():
     with db.engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM users;"))
         return [dict(row._mapping) for row in result]
+
 
 @app.route("/dependents", methods=["GET"])
 def get_dependents():
@@ -38,11 +40,13 @@ def get_dependents():
         result = conn.execute(text("SELECT * FROM dependents;"))
         return [dict(row._mapping) for row in result]
 
+
 @app.route("/service", methods=["GET"])
 def get_service():
     with db.engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM service;"))
         return [dict(row._mapping) for row in result]
+
 
 @app.route("/appointments", methods=["GET"])
 def get_appointments():
@@ -50,17 +54,20 @@ def get_appointments():
         result = conn.execute(text("SELECT * FROM appointments;"))
         return [dict(row._mapping) for row in result]
 
+
 @app.route("/appointment-service", methods=["GET"])
 def get_appointment_service():
     with db.engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM appointment_service;"))
         return [dict(row._mapping) for row in result]
 
+
 @app.route("/reviews", methods=["GET"])
 def get_reviews():
     with db.engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM reviews;"))
         return [dict(row._mapping) for row in result]
+
 
 if __name__ == "__main__":
     app.run(debug=True)
