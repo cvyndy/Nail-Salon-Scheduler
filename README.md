@@ -135,3 +135,8 @@ http://127.0.0.1:5000/users
 http://127.0.0.1:5000/appointments
 ```
 Since the tables currently do not have any data, it will each return [] successfully.
+
+ ### Database Schema
+
+![Database Schema](db_schema.png)
+
