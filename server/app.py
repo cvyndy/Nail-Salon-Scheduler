@@ -58,7 +58,7 @@ class Appointment(db.Model):
     end_time = db.Column(db.DateTime, nullable=False)
     time_booked = db.Column(db.DateTime, nullable=False)
     service_id = db.Column(db.Integer, nullable=False)  
-    
+
     def to_dict(self):
         return {
             "appointment_id": self.appointment_id,
@@ -68,6 +68,56 @@ class Appointment(db.Model):
             "end_time": self.end_time.isoformat(),
             "time_booked": self.time_booked.isoformat(),
             "service_id": self.service_id,
+        }
+
+
+class Service(db.Model):
+    __tablename__ = "services"
+    service_id = db.Column(db.Integer, primary_key=True)
+    service_name = db.Column(db.String(100), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+
+    def to_dict(self):
+        return {
+            "service_id": self.service_id,
+            "service_name": self.service_name,
+            "price": self.price,
+        }
+
+
+class AppointmentService(db.Model):
+    __tablename__ = "appointment_services"
+    appointment_id = db.Column(
+        db.Integer, db.ForeignKey("appointments.appointment_id", ondelete="CASCADE"), nullable=False
+    )
+    service_id = db.Column(
+        db.Integer, db.ForeignKey("services.service_id", ondelete="CASCADE"), nullable=False
+    )
+
+    def to_dict(self):
+        return {
+            "appointment_id": self.appointment_id,
+            "service_id": self.service_id,
+        }
+
+
+class Review(db.Model):
+    __tablename__ = "reviews"
+    review_id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(
+        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    )
+    rating = db.Column(db.Integer, nullable=False)
+    time_posted = db.Column(db.DateTime, nullable=False)
+    comment = db.Column(db.String(255), nullable=True)
+
+    def to_dict(self):
+        return {
+            "review_id": self.review_id,
+            "customer_id": self.customer_id,
+            "rating": self.rating,
+            "time_posted": self.time_posted.isoformat(),
+            "comment": self.comment,
         }
 
 
