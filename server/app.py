@@ -45,6 +45,32 @@ class Dependent(db.Model):
         }
 
 
+class Appointment(db.Model):
+    __tablename__ = "appointments"
+    appointment_id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(
+        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    )
+    staff_id = db.Column(
+        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    )
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    time_booked = db.Column(db.DateTime, nullable=False)
+    service_id = db.Column(db.Integer, nullable=False)  
+    
+    def to_dict(self):
+        return {
+            "appointment_id": self.appointment_id,
+            "customer_id": self.customer_id,
+            "staff_id": self.staff_id,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat(),
+            "time_booked": self.time_booked.isoformat(),
+            "service_id": self.service_id,
+        }
+
+
 @app.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
