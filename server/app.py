@@ -198,35 +198,6 @@ def delete_users(user_id=None):
     return {"message": f"User {user_id} deleted"}, 200
 
 
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
-
-
-@app.route("/test-db")
-def db_test():
-    try:
-        with db.engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return "<p>Database connection successful</p>"
-    except Exception as e:
-        return f"<p>Database connection failed: {str(e)}</p>"
-
-
-@app.route("/users", methods=["GET"])
-def get_users():
-    with db.engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM users;"))
-        return [dict(row._mapping) for row in result]
-
-
-@app.route("/dependents", methods=["GET"])
-def get_dependents():
-    with db.engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM dependents;"))
-        return [dict(row._mapping) for row in result]
-
-
 @app.route("/service", methods=["GET"])
 def get_service():
     with db.engine.connect() as conn:
@@ -253,6 +224,11 @@ def get_reviews():
     with db.engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM reviews;"))
         return [dict(row._mapping) for row in result]
+
+
+@app.route("/")
+def hello_world():
+    return "<p>Hello, World!</p>"
 
 
 if __name__ == "__main__":
