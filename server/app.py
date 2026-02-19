@@ -12,6 +12,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
+# Database Models
 class User(db.Model):
     __tablename__ = "users"
     user_id = db.Column(db.Integer, primary_key=True)
@@ -57,7 +58,7 @@ class Appointment(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     time_booked = db.Column(db.DateTime, nullable=False)
-    service_id = db.Column(db.Integer, nullable=False)  
+    service_id = db.Column(db.Integer, nullable=False)
 
     def to_dict(self):
         return {
@@ -88,10 +89,16 @@ class Service(db.Model):
 class AppointmentService(db.Model):
     __tablename__ = "appointment_services"
     appointment_id = db.Column(
-        db.Integer, db.ForeignKey("appointments.appointment_id", ondelete="CASCADE"), nullable=False
+        db.Integer,
+        db.ForeignKey("appointments.appointment_id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
     )
     service_id = db.Column(
-        db.Integer, db.ForeignKey("services.service_id", ondelete="CASCADE"), nullable=False
+        db.Integer,
+        db.ForeignKey("services.service_id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
     )
 
     def to_dict(self):
@@ -105,7 +112,7 @@ class Review(db.Model):
     __tablename__ = "reviews"
     review_id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(
-        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+        db.Integer, db.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
     )
     rating = db.Column(db.Integer, nullable=False)
     time_posted = db.Column(db.DateTime, nullable=False)
@@ -121,6 +128,7 @@ class Review(db.Model):
         }
 
 
+# Create User and Dependent Endpoints 
 @app.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
@@ -159,30 +167,40 @@ def get_user_dependents(user_id):
     return [d.to_dict() for d in dependents], 200
 
 
+@app.route("/users/<int:user_id>/role", methods=["PATCH"])
+def change_role(user_id):
+    if current_user.role != "admin":
+        return {"error": "Admins only"}, 403
+    user = User.query.get_or_404(user_id)
+    user.role = request.json["role"]
+    db.session.commit()
+    return user.to_dict()
+
+
+# DELETE one user OR all users
+@app.route("/users", methods=["DELETE"])
 @app.route("/users/<int:user_id>", methods=["DELETE"])
-def delete_user(user_id):
+def delete_users(user_id=None):
+    if user_id is None:
+        users = User.query.all()
+        if not users:
+            return {"message": "No users to delete"}, 200
+        count = len(users)
+        for user in users:
+            db.session.delete(user)
+        db.session.commit()
+        return {"message": f"{count} users deleted"}, 200
     user = User.query.get(user_id)
     if not user:
         return {"error": "User not found"}, 404
-
     db.session.delete(user)
     db.session.commit()
-    return {"message": "User deleted"}, 200
+    return {"message": f"User {user_id} deleted"}, 200
 
 
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
-
-
-@app.route("/test-db")
-def db_test():
-    try:
-        with db.engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return {"message": "Database connection successful"}
-    except Exception as e:
-        return {"error": str(e)}, 500
 
 
 if __name__ == "__main__":
