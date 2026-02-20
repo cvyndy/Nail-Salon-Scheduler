@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 
 load_dotenv()
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL") or "sqlite:///dev.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
@@ -198,13 +198,6 @@ def delete_users(user_id=None):
     return {"message": f"User {user_id} deleted"}, 200
 
 
-@app.route("/service", methods=["GET"])
-def get_service():
-    with db.engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM service;"))
-        return [dict(row._mapping) for row in result]
-
-
 @app.route("/appointments", methods=["GET"])
 def get_appointments():
     with db.engine.connect() as conn:
@@ -226,6 +219,13 @@ def get_reviews():
         return [dict(row._mapping) for row in result]
 
 
+@app.route("/service", methods=["GET"])
+def get_service():
+    with db.engine.connect() as conn:
+        result = conn.execute(text("SELECT * FROM service;"))
+        return [dict(row._mapping) for row in result]
+
+        
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
