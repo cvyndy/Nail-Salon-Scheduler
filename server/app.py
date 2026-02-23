@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -128,7 +129,7 @@ class Review(db.Model):
         }
 
 
-# Create User and Dependent Endpoints 
+# Create User and Dependent Endpoints
 @app.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
@@ -205,6 +206,32 @@ def get_appointments():
         return [dict(row._mapping) for row in result]
 
 
+@app.route("/appointments", methods=["POST"])
+def create_appointment():
+    data = request.get_json()
+    required = ["customer_id", "staff_id", "start_time", "end_time", "service_id"]
+    for field in required:
+        if field not in data:
+            return {"error": f"Missing field: {field}"}, 400
+    customer = User.query.get(data["customer_id"])
+    staff = User.query.get(data["staff_id"])
+    if not customer:
+        return {"error": "Customer not found"}, 404
+    if not staff:
+        return {"error": "Staff not found"}, 404
+    new_appointment = Appointment(
+        customer_id=data["customer_id"],
+        staff_id=data["staff_id"],
+        start_time=start_time,
+        end_time=end_time,
+        time_booked=datetime.utcnow(),
+        service_id=data["service_id"],
+    )
+    db.session.add(new_appointment)
+    db.session.commit()
+    return new_appointment.to_dict(), 201
+
+
 @app.route("/appointment-service", methods=["GET"])
 def get_appointment_service():
     with db.engine.connect() as conn:
@@ -225,7 +252,7 @@ def get_service():
         result = conn.execute(text("SELECT * FROM service;"))
         return [dict(row._mapping) for row in result]
 
-        
+
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
