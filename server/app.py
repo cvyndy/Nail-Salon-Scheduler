@@ -4,6 +4,7 @@ from sqlalchemy import text
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 
@@ -206,6 +207,7 @@ def get_appointments():
         return [dict(row._mapping) for row in result]
 
 
+# Appointment creation 
 @app.route("/appointments", methods=["POST"])
 def create_appointment():
     data = request.get_json()
@@ -232,11 +234,80 @@ def create_appointment():
     return new_appointment.to_dict(), 201
 
 
+@app.route("/appointments", methods=["DELETE"])
+@app.route("/appointments/<int:appointment_id>", methods=["DELETE"])
+def delete_appointments(appointment_id=None):
+    # DELETE ALL
+    if appointment_id is None:
+        appointments = Appointment.query.all()
+        if not appointments:
+            return {"message": "No appointments to delete"}, 200
+        count = len(appointments)
+        for appt in appointments:
+            db.session.delete(appt)
+        db.session.commit()
+        return {"message": f"{count} appointments deleted"}, 200
+    # DELETE ONE
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return {"error": "Appointment not found"}, 404
+    db.session.delete(appointment)
+    db.session.commit()
+    return {"message": f"Appointment {appointment_id} deleted"}, 200
+
+
 @app.route("/appointment-service", methods=["GET"])
 def get_appointment_service():
     with db.engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM appointment_service;"))
         return [dict(row._mapping) for row in result]
+
+
+@app.route("/reviews", methods=["POST"])
+def create_review():
+    data = request.get_json()
+    if "rating" not in data:
+        return {"error": "rating required"}, 400
+    customer_id = data.get("customer_id")
+    if customer_id is not None:
+        user = User.query.get(customer_id)
+        if not user:
+            return {"error": "Customer not found"}, 404
+    if "time_posted" in data:
+        time_posted = datetime.fromisoformat(data["time_posted"])
+    else:
+        time_posted = datetime.now(ZoneInfo("America/New_York"))
+    new_review = Review(
+        customer_id=customer_id,
+        rating=data["rating"],
+        comment=data.get("comment"),
+        time_posted=time_posted
+    )
+    db.session.add(new_review)
+    db.session.commit()
+    return new_review.to_dict(), 201
+
+
+@app.route("/reviews", methods=["DELETE"])
+@app.route("/reviews/<int:review_id>", methods=["DELETE"])
+def delete_reviews(review_id=None):
+    # DELETE ALL
+    if review_id is None:
+        reviews = Review.query.all()
+        if not reviews:
+            return {"message": "No reviews to delete"}, 200
+        count = len(reviews)
+        for r in reviews:
+            db.session.delete(r)
+        db.session.commit()
+        return {"message": f"{count} reviews deleted"}, 200
+    # DELETE ONE
+    review = Review.query.get(review_id)
+    if not review:
+        return {"error": "Review not found"}, 404
+    db.session.delete(review)
+    db.session.commit()
+    return {"message": f"Review {review_id} deleted"}, 200
 
 
 @app.route("/reviews", methods=["GET"])
