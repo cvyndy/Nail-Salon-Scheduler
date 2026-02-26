@@ -207,7 +207,7 @@ def get_appointments():
         return [dict(row._mapping) for row in result]
 
 
-# Appointment creation 
+# Appointment creation
 @app.route("/appointments", methods=["POST"])
 def create_appointment():
     data = request.get_json()
@@ -281,7 +281,7 @@ def create_review():
         customer_id=customer_id,
         rating=data["rating"],
         comment=data.get("comment"),
-        time_posted=time_posted
+        time_posted=time_posted,
     )
     db.session.add(new_review)
     db.session.commit()
