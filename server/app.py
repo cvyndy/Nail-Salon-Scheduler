@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from uuid import uuid4
+import uuid
 
 app = Flask(__name__)
 
@@ -14,10 +16,16 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
+def normalize_uuid(value):
+    if value is None:
+        return None
+    return str(uuid.UUID(str(value)))
+
+
 # Database Models
 class User(db.Model):
     __tablename__ = "users"
-    user_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), nullable=False, default="customer")
@@ -34,7 +42,9 @@ class User(db.Model):
 
 class Dependent(db.Model):
     __tablename__ = "dependents"
-    dependent_id = db.Column(db.Integer, primary_key=True)
+    dependent_id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(
         db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
@@ -50,7 +60,9 @@ class Dependent(db.Model):
 
 class Appointment(db.Model):
     __tablename__ = "appointments"
-    appointment_id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     customer_id = db.Column(
         db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
     )
@@ -76,7 +88,9 @@ class Appointment(db.Model):
 
 class Service(db.Model):
     __tablename__ = "services"
-    service_id = db.Column(db.Integer, primary_key=True)
+    service_id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     service_name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
 
@@ -91,16 +105,14 @@ class Service(db.Model):
 class AppointmentService(db.Model):
     __tablename__ = "appointment_services"
     appointment_id = db.Column(
-        db.Integer,
+        db.String(36),
         db.ForeignKey("appointments.appointment_id", ondelete="CASCADE"),
         primary_key=True,
-        nullable=False,
     )
     service_id = db.Column(
-        db.Integer,
+        db.String(36),
         db.ForeignKey("services.service_id", ondelete="CASCADE"),
         primary_key=True,
-        nullable=False,
     )
 
     def to_dict(self):
@@ -112,13 +124,13 @@ class AppointmentService(db.Model):
 
 class Review(db.Model):
     __tablename__ = "reviews"
-    review_id = db.Column(db.Integer, primary_key=True)
+    review_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
     customer_id = db.Column(
-        db.Integer, db.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        db.String(36), db.ForeignKey("users.user_id", ondelete="SET NULL")
     )
     rating = db.Column(db.Integer, nullable=False)
     time_posted = db.Column(db.DateTime, nullable=False)
-    comment = db.Column(db.String(255), nullable=True)
+    comment = db.Column(db.String(255))
 
     def to_dict(self):
         return {
@@ -134,11 +146,12 @@ class Review(db.Model):
 @app.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
+    admin_exists = User.query.filter_by(role="admin").first() is not None
+    role = "customer"
+    if not admin_exists:
+        role = "admin"
     new_user = User(
-        email=data["email"],
-        password=data["password"],
-        name=data["name"],
-        role="customer",
+        email=data["email"], password=data["password"], name=data["name"], role=role
     )
     db.session.add(new_user)
     db.session.commit()
@@ -171,12 +184,21 @@ def get_user_dependents(user_id):
 
 @app.route("/users/<int:user_id>/role", methods=["PATCH"])
 def change_role(user_id):
-    if current_user.role != "admin":
+    data = request.get_json()
+    admin_id = data.get("admin_id")
+    role = data.get("role")
+    if admin_id is None or role is None:
+        return {"error": "admin_id and role required"}, 400
+    admin = User.query.get(admin_id)
+    if not admin:
+        return {"error": "Admin user not found"}, 404
+    if admin.user_id != 1 and admin.role != "admin":
         return {"error": "Admins only"}, 403
     user = User.query.get_or_404(user_id)
-    user.role = request.json["role"]
+    user.role = role
     db.session.commit()
-    return user.to_dict()
+
+    return user.to_dict(), 200
 
 
 # DELETE one user OR all users
