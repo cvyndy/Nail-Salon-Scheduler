@@ -285,6 +285,25 @@ def get_appointment_service():
         return [dict(row._mapping) for row in result]
 
 
+@app.route("/appointment-service", methods=["POST"])
+def create_appointment_service():
+    data = request.get_json()
+    appointment_id = normalize_uuid(data["appointment_id"])
+    service_id = normalize_uuid(data["service_id"])
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return {"error": "Appointment not found"}, 404
+    service = Service.query.get(service_id)
+    if not service:
+        return {"error": "Service not found"}, 404
+    new_link = AppointmentService(
+        appointment_id=appointment_id,
+        service_id=service_id
+    )
+    db.session.add(new_link)
+    db.session.commit()
+    return new_link.to_dict(), 201
+
 @app.route("/reviews", methods=["POST"])
 def create_review():
     data = request.get_json()
