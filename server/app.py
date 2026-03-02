@@ -296,13 +296,11 @@ def create_appointment_service():
     service = Service.query.get(service_id)
     if not service:
         return {"error": "Service not found"}, 404
-    new_link = AppointmentService(
-        appointment_id=appointment_id,
-        service_id=service_id
-    )
+    new_link = AppointmentService(appointment_id=appointment_id, service_id=service_id)
     db.session.add(new_link)
     db.session.commit()
     return new_link.to_dict(), 201
+
 
 @app.route("/reviews", methods=["POST"])
 def create_review():
