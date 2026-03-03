@@ -22,7 +22,6 @@ def normalize_uuid(value):
     return str(uuid.UUID(str(value)))
 
 
-# Database Models
 class User(db.Model):
     __tablename__ = "users"
     user_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -42,12 +41,12 @@ class User(db.Model):
 
 class Dependent(db.Model):
     __tablename__ = "dependents"
-    dependent_id = db.Column(
-        db.String(36), primary_key=True, default=lambda: str(uuid4())
-    )
+    dependent_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
     name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(
-        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+        db.String(36),
+        db.ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
     )
 
     def to_dict(self):
@@ -60,19 +59,19 @@ class Dependent(db.Model):
 
 class Appointment(db.Model):
     __tablename__ = "appointments"
-    appointment_id = db.Column(
-        db.String(36), primary_key=True, default=lambda: str(uuid4())
-    )
+    appointment_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
     customer_id = db.Column(
-        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+        db.String(36), db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
     )
     staff_id = db.Column(
-        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+        db.String(36), db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
     )
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     time_booked = db.Column(db.DateTime, nullable=False)
-    service_id = db.Column(db.Integer, nullable=False)
+    service_id = db.Column(
+        db.String(36), db.ForeignKey("services.service_id", ondelete="RESTRICT"), nullable=False
+    )
 
     def to_dict(self):
         return {
@@ -88,9 +87,7 @@ class Appointment(db.Model):
 
 class Service(db.Model):
     __tablename__ = "services"
-    service_id = db.Column(
-        db.String(36), primary_key=True, default=lambda: str(uuid4())
-    )
+    service_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
     service_name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
 
@@ -126,7 +123,9 @@ class Review(db.Model):
     __tablename__ = "reviews"
     review_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
     customer_id = db.Column(
-        db.String(36), db.ForeignKey("users.user_id", ondelete="SET NULL")
+        db.String(36),
+        db.ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
     )
     rating = db.Column(db.Integer, nullable=False)
     time_posted = db.Column(db.DateTime, nullable=False)
@@ -142,7 +141,6 @@ class Review(db.Model):
         }
 
 
-# Create User and Dependent Endpoints
 @app.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
@@ -161,7 +159,8 @@ def create_user():
 @app.route("/dependents", methods=["POST"])
 def create_dependent():
     data = request.get_json()
-    new_dep = Dependent(name=data["name"], user_id=int(data["user_id"]))
+    user_id = normalize_uuid(data["user_id"])
+    new_dep = Dependent(name=data["name"], user_id=user_id)
     db.session.add(new_dep)
     db.session.commit()
     return new_dep.to_dict(), 201
@@ -173,8 +172,9 @@ def get_users():
     return [user.to_dict() for user in users], 200
 
 
-@app.route("/users/<int:user_id>/dependents", methods=["GET"])
+@app.route("/users/<string:user_id>/dependents", methods=["GET"])
 def get_user_dependents(user_id):
+    user_id = normalize_uuid(user_id)
     user = User.query.get(user_id)
     if not user:
         return {"error": "User not found"}, 404
@@ -182,28 +182,27 @@ def get_user_dependents(user_id):
     return [d.to_dict() for d in dependents], 200
 
 
-@app.route("/users/<int:user_id>/role", methods=["PATCH"])
+@app.route("/users/<string:user_id>/role", methods=["PATCH"])
 def change_role(user_id):
     data = request.get_json()
-    admin_id = data.get("admin_id")
+    admin_id = normalize_uuid(data.get("admin_id"))
     role = data.get("role")
     if admin_id is None or role is None:
         return {"error": "admin_id and role required"}, 400
     admin = User.query.get(admin_id)
     if not admin:
         return {"error": "Admin user not found"}, 404
-    if admin.user_id != 1 and admin.role != "admin":
+    if admin.role != "admin":
         return {"error": "Admins only"}, 403
+    user_id = normalize_uuid(user_id)
     user = User.query.get_or_404(user_id)
     user.role = role
     db.session.commit()
-
     return user.to_dict(), 200
 
 
-# DELETE one user OR all users
 @app.route("/users", methods=["DELETE"])
-@app.route("/users/<int:user_id>", methods=["DELETE"])
+@app.route("/users/<string:user_id>", methods=["DELETE"])
 def delete_users(user_id=None):
     if user_id is None:
         users = User.query.all()
@@ -214,6 +213,7 @@ def delete_users(user_id=None):
             db.session.delete(user)
         db.session.commit()
         return {"message": f"{count} users deleted"}, 200
+    user_id = normalize_uuid(user_id)
     user = User.query.get(user_id)
     if not user:
         return {"error": "User not found"}, 404
@@ -229,7 +229,6 @@ def get_appointments():
         return [dict(row._mapping) for row in result]
 
 
-# Appointment creation
 @app.route("/appointments", methods=["POST"])
 def create_appointment():
     data = request.get_json()
@@ -237,19 +236,24 @@ def create_appointment():
     for field in required:
         if field not in data:
             return {"error": f"Missing field: {field}"}, 400
-    customer = User.query.get(data["customer_id"])
-    staff = User.query.get(data["staff_id"])
+    customer_id = normalize_uuid(data["customer_id"])
+    staff_id = normalize_uuid(data["staff_id"])
+    service_id = normalize_uuid(data["service_id"])
+    customer = User.query.get(customer_id)
+    staff = User.query.get(staff_id)
     if not customer:
         return {"error": "Customer not found"}, 404
     if not staff:
         return {"error": "Staff not found"}, 404
+    start_time = datetime.fromisoformat(data["start_time"])
+    end_time = datetime.fromisoformat(data["end_time"])
     new_appointment = Appointment(
-        customer_id=data["customer_id"],
-        staff_id=data["staff_id"],
+        customer_id=customer_id,
+        staff_id=staff_id,
         start_time=start_time,
         end_time=end_time,
         time_booked=datetime.utcnow(),
-        service_id=data["service_id"],
+        service_id=service_id,
     )
     db.session.add(new_appointment)
     db.session.commit()
@@ -257,9 +261,8 @@ def create_appointment():
 
 
 @app.route("/appointments", methods=["DELETE"])
-@app.route("/appointments/<int:appointment_id>", methods=["DELETE"])
+@app.route("/appointments/<string:appointment_id>", methods=["DELETE"])
 def delete_appointments(appointment_id=None):
-    # DELETE ALL
     if appointment_id is None:
         appointments = Appointment.query.all()
         if not appointments:
@@ -269,7 +272,7 @@ def delete_appointments(appointment_id=None):
             db.session.delete(appt)
         db.session.commit()
         return {"message": f"{count} appointments deleted"}, 200
-    # DELETE ONE
+    appointment_id = normalize_uuid(appointment_id)
     appointment = Appointment.query.get(appointment_id)
     if not appointment:
         return {"error": "Appointment not found"}, 404
@@ -281,7 +284,7 @@ def delete_appointments(appointment_id=None):
 @app.route("/appointment-service", methods=["GET"])
 def get_appointment_service():
     with db.engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM appointment_service;"))
+        result = conn.execute(text("SELECT * FROM appointment_services;"))
         return [dict(row._mapping) for row in result]
 
 
@@ -309,6 +312,7 @@ def create_review():
         return {"error": "rating required"}, 400
     customer_id = data.get("customer_id")
     if customer_id is not None:
+        customer_id = normalize_uuid(customer_id)
         user = User.query.get(customer_id)
         if not user:
             return {"error": "Customer not found"}, 404
@@ -328,9 +332,8 @@ def create_review():
 
 
 @app.route("/reviews", methods=["DELETE"])
-@app.route("/reviews/<int:review_id>", methods=["DELETE"])
+@app.route("/reviews/<string:review_id>", methods=["DELETE"])
 def delete_reviews(review_id=None):
-    # DELETE ALL
     if review_id is None:
         reviews = Review.query.all()
         if not reviews:
@@ -340,7 +343,7 @@ def delete_reviews(review_id=None):
             db.session.delete(r)
         db.session.commit()
         return {"message": f"{count} reviews deleted"}, 200
-    # DELETE ONE
+    review_id = normalize_uuid(review_id)
     review = Review.query.get(review_id)
     if not review:
         return {"error": "Review not found"}, 404
@@ -359,7 +362,7 @@ def get_reviews():
 @app.route("/service", methods=["GET"])
 def get_service():
     with db.engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM service;"))
+        result = conn.execute(text("SELECT * FROM services;"))
         return [dict(row._mapping) for row in result]
 
 
