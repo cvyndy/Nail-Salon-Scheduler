@@ -156,14 +156,26 @@ def create_user():
     return new_user.to_dict(), 201
 
 
-@app.route("/dependents", methods=["POST"])
-def create_dependent():
+@app.route("/users", methods=["POST"])
+def create_user():
     data = request.get_json()
-    user_id = normalize_uuid(data["user_id"])
-    new_dep = Dependent(name=data["name"], user_id=user_id)
-    db.session.add(new_dep)
+    required = ["email", "password", "name"]
+    for k in required:
+        if k not in data:
+            return {"error": f"Missing field: {k}"}, 400
+    admin_exists = User.query.filter_by(role="admin").first() is not None
+    role = "customer"
+    if not admin_exists:
+        role = "admin"
+    new_user = User(
+        email=data["email"],
+        password=data["password"],
+        name=data["name"],
+        role=role
+    )
+    db.session.add(new_user)
     db.session.commit()
-    return new_dep.to_dict(), 201
+    return new_user.to_dict(), 201
 
 
 @app.route("/users", methods=["GET"])
