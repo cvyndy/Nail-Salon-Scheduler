@@ -19,7 +19,13 @@ db = SQLAlchemy(app)
 def normalize_uuid(value):
     if value is None:
         return None
-    return str(uuid.UUID(str(value)))
+    s = str(value)
+    if len(s) != 36:
+        return None
+    parts = s.split("-")
+    if [len(p) for p in parts] != [8,4,4,4,12]:
+        return None
+    return s.lower()
 
 
 class User(db.Model):
