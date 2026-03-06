@@ -23,7 +23,7 @@ def normalize_uuid(value):
     if len(s) != 36:
         return None
     parts = s.split("-")
-    if [len(p) for p in parts] != [8,4,4,4,12]:
+    if [len(p) for p in parts] != [8, 4, 4, 4, 12]:
         return None
     return s.lower()
 
@@ -47,7 +47,9 @@ class User(db.Model):
 
 class Dependent(db.Model):
     __tablename__ = "dependents"
-    dependent_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
+    dependent_id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(
         db.String(36),
@@ -65,18 +67,26 @@ class Dependent(db.Model):
 
 class Appointment(db.Model):
     __tablename__ = "appointments"
-    appointment_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
+    appointment_id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     customer_id = db.Column(
-        db.String(36), db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+        db.String(36),
+        db.ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
     )
     staff_id = db.Column(
-        db.String(36), db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+        db.String(36),
+        db.ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
     )
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     time_booked = db.Column(db.DateTime, nullable=False)
     service_id = db.Column(
-        db.String(36), db.ForeignKey("services.service_id", ondelete="RESTRICT"), nullable=False
+        db.String(36),
+        db.ForeignKey("services.service_id", ondelete="RESTRICT"),
+        nullable=False,
     )
 
     def to_dict(self):
@@ -93,7 +103,9 @@ class Appointment(db.Model):
 
 class Service(db.Model):
     __tablename__ = "services"
-    service_id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
+    service_id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid4())
+    )
     service_name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
 
@@ -174,10 +186,7 @@ def create_user():
     if not admin_exists:
         role = "admin"
     new_user = User(
-        email=data["email"],
-        password=data["password"],
-        name=data["name"],
-        role=role
+        email=data["email"], password=data["password"], name=data["name"], role=role
     )
     db.session.add(new_user)
     db.session.commit()
@@ -276,6 +285,49 @@ def create_appointment():
     db.session.add(new_appointment)
     db.session.commit()
     return new_appointment.to_dict(), 201
+
+
+@app.route("/appointments/<string:appointment_id>", methods=["PATCH"])
+def update_appointment(appointment_id):
+    appointment_id = normalize_uuid(appointment_id)
+    if appointment_id is None:
+        return {"error": "Invalid appointment_id"}, 400
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return {"error": "Appointment not found"}, 404
+    data = request.get_json()
+    if "customer_id" in data:
+        customer_id = normalize_uuid(data["customer_id"])
+        if customer_id is None:
+            return {"error": "Invalid customer_id"}, 400
+        customer = User.query.get(customer_id)
+        if not customer:
+            return {"error": "Customer not found"}, 404
+        appointment.customer_id = customer_id
+    if "staff_id" in data:
+        staff_id = normalize_uuid(data["staff_id"])
+        if staff_id is None:
+            return {"error": "Invalid staff_id"}, 400
+        staff = User.query.get(staff_id)
+        if not staff:
+            return {"error": "Staff not found"}, 404
+        appointment.staff_id = staff_id
+    if "service_id" in data:
+        service_id = normalize_uuid(data["service_id"])
+        if service_id is None:
+            return {"error": "Invalid service_id"}, 400
+        service = Service.query.get(service_id)
+        if not service:
+            return {"error": "Service not found"}, 404
+        appointment.service_id = service_id
+    if "start_time" in data:
+        appointment.start_time = datetime.fromisoformat(data["start_time"])
+    if "end_time" in data:
+        appointment.end_time = datetime.fromisoformat(data["end_time"])
+    if appointment.end_time <= appointment.start_time:
+        return {"error": "end_time must be after start_time"}, 400
+    db.session.commit()
+    return appointment.to_dict(), 200
 
 
 @app.route("/appointments", methods=["DELETE"])
