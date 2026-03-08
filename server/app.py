@@ -174,29 +174,30 @@ def create_user():
     return new_user.to_dict(), 201
 
 
-@app.route("/users", methods=["POST"])
-def create_user():
-    data = request.get_json()
-    required = ["email", "password", "name"]
-    for k in required:
-        if k not in data:
-            return {"error": f"Missing field: {k}"}, 400
-    admin_exists = User.query.filter_by(role="admin").first() is not None
-    role = "customer"
-    if not admin_exists:
-        role = "admin"
-    new_user = User(
-        email=data["email"], password=data["password"], name=data["name"], role=role
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    return new_user.to_dict(), 201
-
-
 @app.route("/users", methods=["GET"])
 def get_users():
     users = User.query.all()
     return [user.to_dict() for user in users], 200
+
+
+@app.route("/dependents", methods=["POST"])
+def create_dependent():
+    data = request.get_json()
+    if "name" not in data or "user_id" not in data:
+        return {"error": "Missing field: name or user_id"}, 400
+    user_id = normalize_uuid(data["user_id"])
+    if user_id is None:
+        return {"error": "Invalid user_id"}, 400
+    user = User.query.get(user_id)
+    if not user:
+        return {"error": "User not found"}, 404
+    new_dependent = Dependent(
+        name=data["name"],
+        user_id=user_id
+    )
+    db.session.add(new_dependent)
+    db.session.commit()
+    return new_dependent.to_dict(), 201
 
 
 @app.route("/users/<string:user_id>/dependents", methods=["GET"])
@@ -427,6 +428,20 @@ def get_reviews():
     with db.engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM reviews;"))
         return [dict(row._mapping) for row in result]
+
+
+@app.route("/services", methods=["POST"])
+def create_service():
+    data = request.get_json()
+    if "service_name" not in data or "price" not in data:
+        return {"error": "Missing field: service_name or price"}, 400
+    new_service = Service(
+        service_name=data["service_name"],
+        price=data["price"]
+    )
+    db.session.add(new_service)
+    db.session.commit()
+    return new_service.to_dict(), 201
 
 
 @app.route("/service", methods=["GET"])
