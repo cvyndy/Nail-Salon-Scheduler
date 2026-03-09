@@ -352,6 +352,21 @@ def delete_appointments(appointment_id=None):
     return {"message": f"Appointment {appointment_id} deleted"}, 200
 
 
+@app.route("/users/<string:user_id>/appointments", methods=["GET"])
+def get_user_appointments(user_id):
+    user_id = normalize_uuid(user_id)
+    if user_id is None:
+        return {"error": "Invalid user_id"}, 400
+    user = User.query.get(user_id)
+    if not user:
+        return {"error": "User not found"}, 404
+    appointments = Appointment.query.filter(
+        (Appointment.customer_id == user_id) |
+        (Appointment.staff_id == user_id)
+    ).all()
+    return [a.to_dict() for a in appointments], 200
+
+
 @app.route("/appointment-service", methods=["GET"])
 def get_appointment_service():
     with db.engine.connect() as conn:
