@@ -191,10 +191,7 @@ def create_dependent():
     user = User.query.get(user_id)
     if not user:
         return {"error": "User not found"}, 404
-    new_dependent = Dependent(
-        name=data["name"],
-        user_id=user_id
-    )
+    new_dependent = Dependent(name=data["name"], user_id=user_id)
     db.session.add(new_dependent)
     db.session.commit()
     return new_dependent.to_dict(), 201
@@ -361,8 +358,7 @@ def get_user_appointments(user_id):
     if not user:
         return {"error": "User not found"}, 404
     appointments = Appointment.query.filter(
-        (Appointment.customer_id == user_id) |
-        (Appointment.staff_id == user_id)
+        (Appointment.customer_id == user_id) | (Appointment.staff_id == user_id)
     ).all()
     return [a.to_dict() for a in appointments], 200
 
@@ -450,10 +446,7 @@ def create_service():
     data = request.get_json()
     if "service_name" not in data or "price" not in data:
         return {"error": "Missing field: service_name or price"}, 400
-    new_service = Service(
-        service_name=data["service_name"],
-        price=data["price"]
-    )
+    new_service = Service(service_name=data["service_name"], price=data["price"])
     db.session.add(new_service)
     db.session.commit()
     return new_service.to_dict(), 201
