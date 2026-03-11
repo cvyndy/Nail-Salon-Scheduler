@@ -433,7 +433,7 @@ def delete_reviews(review_id=None):
     db.session.commit()
     return {"message": f"Review {review_id} deleted"}, 200
 
-
+# For simplicity, this endpoint returns all reviews without pagination or filtering
 @app.route("/reviews", methods=["GET"])
 def get_reviews():
     with db.engine.connect() as conn:
