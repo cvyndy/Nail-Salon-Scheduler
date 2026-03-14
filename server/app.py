@@ -434,7 +434,6 @@ def delete_reviews(review_id=None):
     return {"message": f"Review {review_id} deleted"}, 200
 
 
-# For simplicity, this endpoint returns all reviews without pagination or filtering
 @app.route("/reviews", methods=["GET"])
 def get_reviews():
     with db.engine.connect() as conn:
@@ -442,7 +441,6 @@ def get_reviews():
         return [dict(row._mapping) for row in result]
 
 
-# For simplicity, this endpoint returns all services without pagination or filtering
 @app.route("/services", methods=["POST"])
 def create_service():
     data = request.get_json()
